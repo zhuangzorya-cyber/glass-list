@@ -1,0 +1,35 @@
+{
+  "version": 9,
+  "items": [
+    {
+      "id": 1, "cat": "read", "title": "《思考，快与慢》", "author": "丹尼尔·卡尼曼",
+      "summary": "讲人类思维的两套系统——系统1快速直觉，系统2慢速理性。探讨认知偏误与决策。",
+      "tags": [], "added": "2026-10-07", "done": false, "deleted": false
+    },
+    {
+      "id": 2, "cat": "todo", "title": "AI创新大会注册", "author": "",
+      "summary": "第七届AI应用创新大会，含大模型落地、Agent实践等议题。",
+      "due": "2026-10-20 截止", "tags": [], "added": "2026-10-07", "done": false, "deleted": false
+    },
+    {
+      "id": 3, "cat": "watch", "title": "《只此青绿》", "author": "舞蹈诗剧",
+      "summary": "以《千里江山图》为灵感的舞蹈诗剧，舞美极有东方韵味。",
+      "tags": ["纪录片"], "added": "2026-10-07", "done": false, "deleted": false
+    },
+    {
+      "id": 4, "cat": "read", "title": "《金牌打手》", "author": "",
+      "extra": "看完后没再看过同类型小说",
+      "tags": ["BL","强强"], "added": "2026-10-07", "done": false, "deleted": false
+    },
+    {
+      "id": 5, "cat": "read", "title": "《小阵雨》", "author": "天然呆呀",
+      "extra": "排雷：受有听力障碍，不想听的话会直接摘助听器",
+      "tags": ["BL","甜文","治愈"], "added": "2026-10-07", "done": false, "deleted": false
+    },
+    {
+      "id": 6, "cat": "prompt", "title": "写作润色提示词", "author": "",
+      "prompt": "你是一位资深文字编辑。请对以下文本进行润色：\n1. 修正语法错误与不通顺之处\n2. 提升表达力，但保持原意\n3. 风格保持自然，不要过度华丽\n4. 输出润色后的文本，并在末尾用一句话说明主要改动\n\n原文：[在此粘贴]",
+      "tags": ["写作","润色"], "added": "2026-10-07", "done": false, "deleted": false
+    }
+  ]
+}

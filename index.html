@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="我的清单">
+<meta name="theme-color" content="#EFE9FF">
+<title>我的清单</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --text: #1A1A2E;
+    --text-sub: #6E6E85;
+    --accent: #7C5CFC;
+    --accent-2: #5B3FD6;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-border: rgba(255,255,255,0.70);
+    --glass-hi: rgba(255,255,255,0.90);
+    --glass-shadow: 0 12px 34px rgba(31,38,135,0.14);
+    --blur: blur(24px) saturate(180%);
+    --radius: 26px;
+    --radius-sm: 18px;
+    --divider: rgba(255,255,255,0.55);
+    --bottom-nav: rgba(22,22,34,0.50);
+    --nav-inactive: rgba(255,255,255,0.50);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --text: #F4F4FA;
+      --text-sub: #A6A6BE;
+      --glass-bg: rgba(28,28,42,0.50);
+      --glass-border: rgba(255,255,255,0.16);
+      --glass-hi: rgba(255,255,255,0.22);
+      --glass-shadow: 0 12px 34px rgba(0,0,0,0.45);
+      --divider: rgba(255,255,255,0.12);
+      --bottom-nav: rgba(10,10,18,0.55);
+      --nav-inactive: rgba(255,255,255,0.40);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; padding: 0; background: transparent;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "PingFang SC",
+                 "Noto Sans SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    color: var(--text); font-size: 16px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    max-width: 720px; margin: 0 auto; min-height: 100vh;
+    padding-bottom: 120px;
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== 流动光斑背景（让玻璃有东西可折射） ===== */
+  .app-bg {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden;
+    background: linear-gradient(160deg, #EAF0FF 0%, #F8F7FC 45%, #FFEAF2 100%);
+  }
+  @media (prefers-color-scheme: dark) {
+    .app-bg { background: linear-gradient(160deg, #0E0E18 0%, #15151F 50%, #1A1426 100%); }
+  }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.6; will-change: transform; }
+  .b1 { width: 440px; height: 440px; background: #BCA9FF; top: -130px; left: -110px; animation: float1 20s ease-in-out infinite; }
+  .b2 { width: 380px; height: 380px; background: #FFB3C8; bottom: -130px; right: -90px; animation: float2 24s ease-in-out infinite; }
+  .b3 { width: 340px; height: 340px; background: #A7E7FF; top: 42%; left: 52%; animation: float3 22s ease-in-out infinite; }
+  @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(60px,40px); } }
+  @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-50px,-30px); } }
+  @keyframes float3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-45px,55px); } }
+  @media (prefers-color-scheme: dark) {
+    .blob { opacity: 0.32; }
+    .b1 { background: #5B3FD6; }
+    .b2 { background: #B3385E; }
+    .b3 { background: #2C7FB8; }
+  }
+
+  /* ===== 玻璃材质基类 + 高光折射边 ===== */
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 1px var(--glass-hi), var(--glass-shadow);
+    position: relative;
+  }
+  .glass::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 42%);
+  }
+  @media (prefers-color-scheme: dark) {
+    .glass::before { background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0) 45%); }
+  }
+
+  /* ===== 顶部问候区 ===== */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 10px;
+  }
+  .profile { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: linear-gradient(135deg, #FCD34D, #F87171);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 14px rgba(248,113,113,0.30), inset 0 1px 1px rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+  .greeting { display: flex; flex-direction: column; }
+  .greeting .hi { font-size: 12px; color: var(--text-sub); letter-spacing: 0; }
+  .greeting .name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .search-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text); cursor: pointer;
+    border: 1px solid var(--glass-border);
+    transition: transform 0.12s;
+  }
+  .search-btn:active { transform: scale(0.92); }
+
+  /* ===== 随机推荐卡（Hero · 彩色磨砂玻璃） ===== */
+  .hero {
+    margin: 8px 20px 18px; padding: 20px 22px 18px;
+    border-radius: var(--radius); color: #fff;
+    background: linear-gradient(135deg, rgba(167,139,250,0.62), rgba(124,92,252,0.62));
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    border: 1px solid rgba(255,255,255,0.55);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.7), 0 14px 34px rgba(124,92,252,0.30);
+    position: relative; overflow: hidden;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  @media (prefers-color-scheme: dark) {
+    .hero { background: linear-gradient(135deg, rgba(110,91,208,0.62), rgba(90,63,214,0.64)); }
+  }
+  .hero:active { transform: scale(0.98); }
+  .hero-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.4px;
+    opacity: 0.8; text-transform: uppercase; display: flex; align-items: center; gap: 6px;
+  }
+  .hero-pick { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+  .hero-pick-emoji {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.45);
+    display: flex; align-items: center; justify-content: center; font-size: 26px;
+    flex-shrink: 0; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .hero-pick-body { flex: 1; min-width: 0; }
+  .hero-pick-title {
+    font-size: 17px; font-weight: 800; line-height: 1.25; letter-spacing: -0.01em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .hero-pick-desc {
+    font-size: 12px; opacity: 0.88; margin-top: 5px; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .hero-pick-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .hero-pick-tags .htag {
+    padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600;
+    background: rgba(255,255,255,0.30); color: #fff;
+  }
+  .hero-empty { font-size: 14px; opacity: 0.9; margin-top: 6px; line-height: 1.5; }
+  .hero-refresh {
+    position: absolute; right: 14px; top: 14px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.28); border: 1px solid rgba(255,255,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #fff; cursor: pointer; z-index: 2;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    transition: transform 0.3s;
+  }
+  .hero-refresh:active { transform: rotate(180deg); }
+  .hero-deco {
+    position: absolute; right: -8px; bottom: -16px; font-size: 80px; opacity: 0.3;
+    transform: rotate(-12deg); pointer-events: none;
+  }
+
+  /* ===== 主标题 ===== */
+  .section-title {
+    font-size: 20px; font-weight: 700; margin: 24px 20px 12px; letter-spacing: -0.02em;
+  }
+
+  /* ===== 首页 2×2 概览方块（半透明彩色玻璃） ===== */
+  .overview-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0 20px;
+  }
+  .overview-card {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+    border-radius: var(--radius); padding: 20px;
+    cursor: pointer; transition: transform 0.15s; min-height: 148px;
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.6);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.85), 0 10px 28px rgba(31,38,135,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    .overview-card { border-color: rgba(255,255,255,0.14);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.12), 0 10px 28px rgba(0,0,0,0.40); }
+  }
+  .overview-card:active { transform: scale(0.97); }
+  .overview-card.todo   { background: linear-gradient(135deg, rgba(253,230,138,0.60), rgba(253,186,116,0.50)); }
+  .overview-card.read   { background: linear-gradient(135deg, rgba(187,247,208,0.60), rgba(110,231,183,0.50)); }
+  .overview-card.watch  { background: linear-gradient(135deg, rgba(191,219,254,0.60), rgba(147,197,253,0.50)); }
+  .overview-card.prompt { background: linear-gradient(135deg, rgba(245,208,254,0.60), rgba(240,171,252,0.50)); }
+  @media (prefers-color-scheme: dark) {
+    .overview-card.todo   { background: linear-gradient(135deg, rgba(253,230,138,0.28), rgba(253,186,116,0.22)); }
+    .overview-card.read   { background: linear-gradient(135deg, rgba(110,231,183,0.28), rgba(16,185,129,0.22)); }
+    .overview-card.watch  { background: linear-gradient(135deg, rgba(147,197,253,0.28), rgba(59,130,246,0.22)); }
+    .overview-card.prompt { background: linear-gradient(135deg, rgba(240,171,252,0.28), rgba(192,132,252,0.22)); }
+  }
+  .overview-card .ov-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(255,255,255,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.6);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .overview-card .ov-icon { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.20); }
+  }
+  .overview-card .ov-title { font-size: 15px; font-weight: 600; opacity: 0.85; }
+  .overview-card .ov-count {
+    font-size: 34px; font-weight: 800; line-height: 1; margin-top: auto; letter-spacing: -0.03em;
+  }
+  .overview-card .ov-deco { position: absolute; right: -6px; bottom: -8px; font-size: 56px; opacity: 0.25; }
+
+  /* ===== 条目卡片（左滑删除 · 玻璃） ===== */
+  .swipe-wrap { position: relative; margin: 0 20px 12px; overflow: hidden; border-radius: var(--radius-sm); }
+  .swipe-actions {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    display: flex; align-items: stretch;
+    transform: translateX(100%); transition: transform 0.25s ease;
+  }
+  .swipe-wrap.open .swipe-actions { transform: translateX(0); }
+  .swipe-actions .swipe-del {
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(248,113,113,0.85); color: #fff; font-size: 14px; font-weight: 600;
+    width: 80px; cursor: pointer; border: none; font-family: inherit;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .swipe-content { transition: transform 0.25s ease; will-change: transform; }
+  .swipe-wrap.open .swipe-content { transform: translateX(-80px); }
+  .item {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    border-radius: var(--radius-sm); padding: 16px;
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 1px var(--glass-hi), 0 6px 18px rgba(31,38,135,0.08);
+    position: relative;
+  }
+  .item-head { display: flex; align-items: flex-start; gap: 12px; }
+  .item-title { font-size: 16px; font-weight: 700; flex: 1; line-height: 1.35; letter-spacing: -0.01em; }
+  .item-author { font-size: 13px; color: var(--text-sub); margin-top: 3px; }
+  .item-summary { font-size: 13px; color: var(--text-sub); margin-top: 8px; line-height: 1.5; }
+  .item-meta { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 11px; color: var(--text-sub); }
+  .badge {
+    display: inline-block; padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;
+  }
+  .badge-todo { background: rgba(254,243,199,0.9); color: #B45309; }
+  .badge-read { background: rgba(209,250,229,0.9); color: #047857; }
+  .badge-watch { background: rgba(219,234,254,0.9); color: #1D4ED8; }
+  .badge-prompt { background: rgba(250,232,255,0.9); color: #7E22CE; }
+  .badge-trash { background: rgba(254,226,226,0.9); color: #B91C1C; }
+  .due { color: #D97706; font-weight: 600; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn {
+    flex: 1; padding: 8px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.45);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    color: var(--text); cursor: pointer; font-family: inherit;
+    transition: transform 0.12s, background 0.15s;
+  }
+  @media (prefers-color-scheme: dark) {
+    .btn { background: rgba(255,255,255,0.10); }
+  }
+  .btn:active { transform: scale(0.96); background: rgba(255,255,255,0.7); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff;
+    border-color: transparent; box-shadow: 0 6px 16px rgba(124,92,252,0.35);
+  }
+  .done .item-title { text-decoration: line-through; color: var(--text-sub); }
+  .done .item-summary { opacity: 0.5; }
+
+  /* ===== 打勾按钮（玻璃圆） ===== */
+  .check-btn {
+    flex: 0 0 28px; width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid rgba(124,92,252,0.5); background: rgba(255,255,255,0.40);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-family: inherit; padding: 0; margin-top: 2px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .check-btn { border-color: rgba(155,132,253,0.6); background: rgba(255,255,255,0.10); }
+  }
+  .check-btn svg { width: 15px; height: 15px; opacity: 0; transition: opacity 0.2s; }
+  .done .check-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent;
+    box-shadow: 0 4px 12px rgba(124,92,252,0.40);
+  }
+  .done .check-btn svg { opacity: 1; }
+
+  /* ===== 标签（带颜色区分 · 玻璃胶囊） ===== */
+  .item-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .tag {
+    display: inline-block; padding: 3px 9px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; border: 1px solid transparent;
+  }
+  .tag-gender { background: rgba(252,231,243,0.9); color: #BE185D; }
+  .tag-theme  { background: rgba(219,234,254,0.9); color: #1D4ED8; }
+  .tag-vibe   { background: rgba(254,243,199,0.9); color: #B45309; }
+  .tag-region { background: rgba(209,250,229,0.9); color: #047857; }
+  .tag-type   { background: rgba(243,232,255,0.9); color: #7E22CE; }
+  .tag-custom { background: rgba(255,255,255,0.5); color: var(--text-sub); border-color: var(--glass-border); }
+
+  /* ===== 标签编辑弹窗（玻璃抽屉） ===== */
+  .modal-mask {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.35);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+    width: 100%; max-width: 720px;
+    border-radius: 28px 28px 0 0;
+    padding: 22px 20px 34px; max-height: 80vh; overflow-y: auto;
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 1px var(--glass-hi), 0 -10px 40px rgba(31,38,135,0.18);
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .modal .modal-sub { font-size: 12px; color: var(--text-sub); margin-bottom: 16px; }
+  .modal .tag-group { margin-bottom: 16px; }
+  .modal .tag-group-title { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+  .modal .tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .modal .tag-opt {
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.45); color: var(--text-sub);
+    cursor: pointer; transition: all 0.15s; opacity: 0.75;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .modal .tag-opt { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.16); }
+  }
+  .modal .tag-opt.selected { font-weight: 700; opacity: 1; border-color: transparent; transform: scale(1.02); }
+  .modal .tag-opt.selected.tag-gender { background: rgba(252,231,243,0.95); color: #BE185D; }
+  .modal .tag-opt.selected.tag-theme  { background: rgba(219,234,254,0.95); color: #1D4ED8; }
+  .modal .tag-opt.selected.tag-vibe   { background: rgba(254,243,199,0.95); color: #B45309; }
+  .modal .tag-opt.selected.tag-region { background: rgba(209,250,229,0.95); color: #047857; }
+  .modal .tag-opt.selected.tag-type   { background: rgba(243,232,255,0.95); color: #7E22CE; }
+  .modal .tag-opt.selected.tag-custom { background: var(--accent); color: #fff; }
+  .modal .tag-opt:not(.selected) { background: rgba(255,255,255,0.45); color: var(--text-sub); }
+  @media (prefers-color-scheme: dark) {
+    .modal .tag-opt:not(.selected) { background: rgba(255,255,255,0.10); }
+  }
+  .modal .custom-input { display: flex; gap: 8px; margin-top: 8px; }
+  .modal .custom-input input {
+    flex: 1; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--glass-border);
+    font-size: 14px; font-family: inherit; background: rgba(255,255,255,0.5); color: var(--text);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .modal .custom-input input { background: rgba(255,255,255,0.10); }
+  }
+  .modal .custom-input button {
+    padding: 10px 16px; border-radius: 12px; background: var(--accent); color: #fff;
+    border: none; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;
+  }
+  .modal .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal .modal-actions button {
+    flex: 1; padding: 12px; border-radius: 14px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--glass-border); background: rgba(255,255,255,0.45); color: var(--text);
+    cursor: pointer; font-family: inherit;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .modal .modal-actions button { background: rgba(255,255,255,0.10); }
+  }
+  .modal .modal-actions .primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border-color: transparent; }
+
+  /* ===== 底部胶囊导航（深色玻璃坞） ===== */
+  .bottom-nav {
+    position: fixed; left: 20px; right: 20px; bottom: 24px;
+    height: 66px; border-radius: 40px;
+    background: var(--bottom-nav);
+    -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-top: 1px solid rgba(255,255,255,0.32);
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 50;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.30), 0 18px 44px rgba(0,0,0,0.34);
+  }
+  .nav-btn {
+    flex: 1; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; color: var(--nav-inactive); border: none; background: transparent;
+    font-family: inherit; cursor: pointer; font-size: 10px; font-weight: 600;
+    transition: color 0.2s; position: relative;
+  }
+  .nav-btn.active { color: #fff; }
+  .nav-btn.active::before {
+    content: ""; position: absolute; inset: 6px 8px; border-radius: 16px; z-index: 0;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.28);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.30);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .nav-btn > * { position: relative; z-index: 1; }
+  .nav-btn .icon {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; transition: transform 0.2s, filter 0.2s;
+  }
+  .nav-btn.active .icon { transform: translateY(-1px) scale(1.06); filter: drop-shadow(0 2px 8px rgba(124,92,252,0.7)); }
+
+  /* ===== 提示词卡片专用（内嵌玻璃块） ===== */
+  .prompt-body {
+    margin-top: 10px; padding: 12px;
+    background: rgba(124,92,252,0.10); border: 1px solid rgba(124,92,252,0.18);
+    border-radius: 14px;
+    font-size: 13px; color: var(--text); line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+    max-height: 120px; overflow: hidden; position: relative;
+  }
+  .prompt-body.expanded { max-height: none; }
+  .prompt-body::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 36px;
+    background: linear-gradient(transparent, rgba(124,92,252,0.10));
+  }
+  .prompt-body.expanded::after { display: none; }
+  .prompt-toggle { font-size: 12px; color: var(--accent); margin-top: 8px; cursor: pointer; font-weight: 600; }
+
+  /* ===== 子分类头部 ===== */
+  .cat-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px 10px; }
+  .cat-header .back {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer;
+    border: 1px solid var(--glass-border);
+    transition: transform 0.12s;
+  }
+  .cat-header .back:active { transform: scale(0.92); }
+  .cat-header .cat-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+
+  /* ===== 已完成折叠区 ===== */
+  .done-section { margin-top: 18px; padding-top: 14px; }
+  .done-section-title { font-size: 13px; color: var(--text-sub); font-weight: 700; margin: 0 20px 12px; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-sub); font-size: 14px; }
+  .empty .emoji { font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.4; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 流动光斑背景 -->
+<div class="app-bg" aria-hidden="true">
+  <span class="blob b1"></span>
+  <span class="blob b2"></span>
+  <span class="blob b3"></span>
+</div>
+
+<!-- 顶部问候区（首页） -->
+<div id="home-header" class="top-bar">
+  <div class="profile">
+    <div class="avatar">🪐</div>
+    <div class="greeting">
+      <span class="hi">Hello,</span>
+      <span class="name">我的清单</span>
+    </div>
+  </div>
+  <button class="search-btn glass" onclick="selectCat('all')">🏠</button>
+</div>
+
+<!-- 子分类头部（默认隐藏） -->
+<div id="cat-header" class="cat-header" style="display:none">
+  <div class="back glass" onclick="selectCat('all')">‹</div>
+  <div class="cat-title" id="page-title">我的清单</div>
+</div>
+
+<!-- 随机推荐卡（Hero） -->
+<div id="hero" class="hero glass" onclick="pickRecommendation(true)">
+  <div class="hero-label">✨ 今日推荐 · 无聊看看</div>
+  <button class="hero-refresh" onclick="event.stopPropagation(); refreshPick()">↻</button>
+  <div id="hero-content"></div>
+  <div class="hero-deco">🎲</div>
+</div>
+
+<!-- 主内容区 -->
+<div class="section-title" id="section-title">分类</div>
+<main id="list"></main>
+
+<!-- 底部胶囊导航 -->
+<nav class="bottom-nav glass">
+  <button class="nav-btn active" data-cat="all" onclick="selectCat('all')">
+    <span class="icon">🏠</span>
+    <span>首页</span>
+  </button>
+  <button class="nav-btn" data-cat="todo" onclick="selectCat('todo')">
+    <span class="icon">⏰</span>
+    <span>待办</span>
+  </button>
+  <button class="nav-btn" data-cat="read" onclick="selectCat('read')">
+    <span class="icon">📚</span>
+    <span>待读</span>
+  </button>
+  <button class="nav-btn" data-cat="watch" onclick="selectCat('watch')">
+    <span class="icon">🎬</span>
+    <span>想看</span>
+  </button>
+  <button class="nav-btn" data-cat="prompt" onclick="selectCat('prompt')">
+    <span class="icon">🤖</span>
+    <span>提示词</span>
+  </button>
+</nav>
+
+<!-- 标签编辑弹窗 -->
+<div class="modal-mask" id="tag-modal">
+  <div class="modal glass">
+    <h3 id="modal-title">编辑标签</h3>
+    <div class="modal-sub">可多选，也可自定义添加</div>
+    <div id="modal-tag-groups"></div>
+    <div class="tag-group">
+      <div class="tag-group-title">自定义标签</div>
+      <div class="custom-input">
+        <input type="text" id="custom-tag-input" placeholder="输入标签名，回车添加">
+        <button onclick="addCustomTag()">添加</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeTagModal()">取消</button>
+      <button class="primary" onclick="saveTags()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 数据 =====
+let DEFAULT_ITEMS = [
+  {
+    id: 1, cat: "read", title: "《思考，快与慢》", author: "丹尼尔·卡尼曼",
+    summary: "讲人类思维的两套系统——系统1快速直觉，系统2慢速理性。探讨认知偏误与决策。",
+    tags: [], added: "2026-10-07", done: false, deleted: false
+  },
+  {
+    id: 2, cat: "todo", title: "AI创新大会注册", author: "",
+    summary: "第七届AI应用创新大会，含大模型落地、Agent实践等议题。",
+    due: "2026-10-20 截止", tags: [], added: "2026-10-07", done: false, deleted: false
+  },
+  {
+    id: 3, cat: "watch", title: "《只此青绿》", author: "舞蹈诗剧",
+    summary: "以《千里江山图》为灵感的舞蹈诗剧，舞美极有东方韵味。",
+    tags: ["纪录片"], added: "2026-10-07", done: false, deleted: false
+  },
+  {
+    id: 4, cat: "read", title: "《金牌打手》", author: "",
+    extra: "看完后没再看过同类型小说",
+    tags: ["BL","强强"], added: "2026-10-07", done: false, deleted: false
+  },
+  {
+    id: 5, cat: "read", title: "《小阵雨》", author: "天然呆呀",
+    extra: "排雷：受有听力障碍，不想听的话会直接摘助听器",
+    tags: ["BL","甜文","治愈"], added: "2026-10-07", done: false, deleted: false
+  },
+  {
+    id: 6, cat: "prompt", title: "写作润色提示词", author: "",
+    prompt: "你是一位资深文字编辑。请对以下文本进行润色：\n1. 修正语法错误与不通顺之处\n2. 提升表达力，但保持原意\n3. 风格保持自然，不要过度华丽\n4. 输出润色后的文本，并在末尾用一句话说明主要改动\n\n原文：[在此粘贴]",
+    tags: ["写作","润色"], added: "2026-10-07", done: false, deleted: false
+  }
+];
+
+let BASE = [];
+let OVERLAY = {};
+let ITEMS = [];
+
+// ===== 标签库（按分组，每组有颜色类名） =====
+const TAG_GROUPS = [
+  { name: "性别向", cls: "tag-gender", tags: ["BL","BG","GL","无CP"] },
+  { name: "题材",   cls: "tag-theme",  tags: ["先婚后爱","破镜重圆","娱乐圈","ABO","双性","重生","穿越","星际","末世","古言","现言","悬疑"] },
+  { name: "氛围",   cls: "tag-vibe",  tags: ["甜文","虐文","沙雕","正剧","治愈","高甜","强强","年上","年下"] },
+  { name: "地区",   cls: "tag-region", tags: ["韩剧","日剧","美剧","英剧","国产","中港台","其他"] },
+  { name: "类型",   cls: "tag-type",   tags: ["纪录片","综艺","影视剧","动漫","电影","话剧","展览","演出"] },
+  { name: "用途",   cls: "tag-type",   tags: ["写作","润色","代码","分析","翻译","总结","角色扮演"] }
+];
+
+// 标签 → 颜色类名 映射
+const TAG_CLS_MAP = {};
+TAG_GROUPS.forEach(g => g.tags.forEach(t => TAG_CLS_MAP[t] = g.cls));
+function tagCls(t) { return TAG_CLS_MAP[t] || "tag-custom"; }
+
+const DATA_VERSION = 9;
+
+let currentCat = "all";
+let editingId = null;
+let editingCat = null;
+let editingTags = [];
+
+const CAT_LABEL = { read:"待读", todo:"待办", watch:"想看", inbox:"收件箱", prompt:"提示词", trash:"回收站" };
+const CAT_BADGE = { read:"badge-read", todo:"badge-todo", watch:"badge-watch", inbox:"badge-read", prompt:"badge-prompt", trash:"badge-trash" };
+
+// ===== 随机推荐卡 =====
+// 从「待读 + 想看」中未完成的条目里随机选一个，按日期固定（每天换一个）
+function getPickPool() {
+  return ITEMS.filter(i => !i.deleted && !i.purged && !i.done && (i.cat === "read" || i.cat === "watch"));
+}
+
+function getDailyIndex(max) {
+  if (max <= 0) return 0;
+  // 用今天日期生成一个种子，保证同一天看到的是同一个
+  const now = new Date();
+  const seed = now.getFullYear() * 10000 + (now.getMonth()+1) * 100 + now.getDate();
+  return seed % max;
+}
+
+let manualPickId = null; // 手动「换一个」时临时锁定
+
+function pickRecommendation(clickToView) {
+  const pool = getPickPool();
+  const heroContent = document.getElementById("hero-content");
+  if (pool.length === 0) {
+    heroContent.innerHTML = `
+      <div class="hero-empty">待读和想看都空空的～<br>无聊时把内容发给 WorkBuddy 吧</div>`;
+    return;
+  }
+  let pick;
+  if (manualPickId !== null) {
+    pick = pool.find(i => i.id === manualPickId);
+    if (!pick) manualPickId = null;
+  }
+  if (!pick) {
+    const idx = getDailyIndex(pool.length);
+    pick = pool[idx];
+  }
+  const emoji = pick.cat === "read" ? "📚" : "🎬";
+  const catLabel = pick.cat === "read" ? "待读" : "想看";
+  const desc = pick.summary || pick.extra || "";
+  const tags = (pick.tags && pick.tags.length)
+    ? `<div class="hero-pick-tags">${pick.tags.slice(0,4).map(t=>`<span class="htag">${t}</span>`).join("")}</div>`
+    : "";
+  heroContent.innerHTML = `
+    <div class="hero-pick">
+      <div class="hero-pick-emoji">${emoji}</div>
+      <div class="hero-pick-body">
+        <div class="hero-pick-title">${pick.title}</div>
+        ${desc ? `<div class="hero-pick-desc">${desc}</div>` : ""}
+        ${tags}
+      </div>
+    </div>`;
+  // 点击进入对应分类
+  if (clickToView) {
+    selectCat(pick.cat);
+  }
+}
+
+function refreshPick() {
+  const pool = getPickPool();
+  if (pool.length === 0) return;
+  if (pool.length === 1) { manualPickId = pool[0].id; pickRecommendation(false); return; }
+  // 随机选一个和当前不同的
+  let pick;
+  const current = document.querySelector("#hero-content .hero-pick-title");
+  const currentText = current ? current.textContent : "";
+  let attempts = 0;
+  do {
+    pick = pool[Math.floor(Math.random() * pool.length)];
+    attempts++;
+  } while (pick.title === currentText && attempts < 10);
+  manualPickId = pick.id;
+  pickRecommendation(false);
+}
+
+
+function render() {
+  const list = document.getElementById("list");
+  const pageTitle = document.getElementById("page-title");
+  const homeHeader = document.getElementById("home-header");
+  const catHeader = document.getElementById("cat-header");
+  const hero = document.getElementById("hero");
+  const sectionTitle = document.getElementById("section-title");
+
+  // 更新底部导航 active 状态
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.cat === currentCat));
+
+  // 首页
+  if (currentCat === "all") {
+    homeHeader.style.display = "flex";
+    catHeader.style.display = "none";
+    hero.style.display = "block";
+    sectionTitle.style.display = "block";
+    sectionTitle.textContent = "分类";
+
+    const active = ITEMS.filter(i => !i.deleted && !i.purged);
+    const cats = [
+      { key:"todo",   icon:"⏰", label:"待办",   cls:"todo", deco:"📝" },
+      { key:"read",   icon:"📚", label:"待读",   cls:"read", deco:"📖" },
+      { key:"watch",  icon:"🎬", label:"想看",   cls:"watch", deco:"🍿" },
+      { key:"prompt", icon:"🤖", label:"提示词", cls:"prompt", deco:"💡" },
+      { key:"inbox",  icon:"📥", label:"收件箱", cls:"todo", deco:"📂" },
+      { key:"trash",  icon:"🗑", label:"回收站", cls:"watch", deco:"🧹" }
+    ];
+    let html = '<div class="overview-grid">';
+    cats.forEach(c => {
+      let n;
+      if (c.key === "trash") n = ITEMS.filter(i=>i.deleted && !i.purged).length;
+      else n = active.filter(i=>i.cat===c.key).length;
+      html += `
+        <div class="overview-card ${c.cls} glass" onclick="selectCat('${c.key}')">
+          <div class="ov-icon">${c.icon}</div>
+          <div class="ov-title">${c.label}</div>
+          <div class="ov-count">${n}</div>
+          <div class="ov-deco">${c.deco}</div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // 最近添加
+    const recent = active.slice().sort((a,b)=>b.id-a.id).slice(0,3);
+    if (recent.length) {
+      html += `<div class="section-title">最近</div>`;
+      html += recent.map(renderItem).join("");
+    }
+    list.innerHTML = html;
+
+    // 刷新首页推荐卡（不跳转）
+    pickRecommendation(false);
+    return;
+  }
+
+  // 子分类视图
+  homeHeader.style.display = "none";
+  catHeader.style.display = "flex";
+  hero.style.display = "none";
+  sectionTitle.style.display = "none";
+  pageTitle.textContent = CAT_LABEL[currentCat];
+
+  let items;
+  if (currentCat === "trash") {
+    items = ITEMS.filter(i => i.deleted && !i.purged);
+  } else {
+    items = ITEMS.filter(i => !i.deleted && !i.purged && i.cat === currentCat);
+  }
+
+  if (items.length === 0) {
+    const msg = currentCat === "trash" ? "回收站是空的" : "这里还空着<br>把内容发给 WorkBuddy，它会自动整理后塞进来";
+    list.innerHTML = `<div class="empty"><span class="emoji">${currentCat==='trash'?'🗑':'📝'}</span>${msg}</div>`;
+    return;
+  }
+
+  const undone = items.filter(i => !i.done);
+  const done = items.filter(i => i.done);
+
+  let html = "";
+  if (undone.length > 0) html += undone.map(renderItem).join("");
+  if (done.length > 0) {
+    html += `<div class="done-section"><div class="done-section-title">已完成 (${done.length})</div>`;
+    html += done.map(renderItem).join("");
+    html += `</div>`;
+  }
+  list.innerHTML = html;
+}
+
+function selectCat(cat) {
+  currentCat = cat;
+  render();
+}
+
+function renderItem(i) {
+  const dueLine = i.due ? `<span class="due">⏰ ${i.due}</span>` : "";
+  const authorLine = i.author ? `<div class="item-author">${i.author}</div>` : "";
+  const tagsLine = (i.tags && i.tags.length) ? `<div class="item-tags">${i.tags.map(t=>`<span class="tag ${tagCls(t)}">${t}</span>`).join("")}</div>` : "";
+  const extraLine = i.extra ? `<div class="item-summary" style="border-left:2px solid var(--divider);padding-left:8px;margin-top:6px">${i.extra}</div>` : "";
+  const promptBlock = i.prompt ? `
+    <div class="prompt-body" id="pb-${i.id}">${i.prompt.replace(/</g,"&lt;")}</div>
+    <div class="prompt-toggle" onclick="togglePrompt(${i.id})">展开全文</div>
+  ` : "";
+  const copyBtn = i.prompt ? `<button class="btn" onclick="copyPrompt(${i.id})">📋 复制</button>` : "";
+
+  let actionsHtml = "";
+  if (i.deleted) {
+    actionsHtml = `
+      <div class="actions">
+        <button class="btn btn-primary" onclick="restoreItem(${i.id})">↩ 恢复</button>
+        <button class="btn" onclick="hardDel(${i.id})">彻底删除</button>
+      </div>`;
+  } else {
+    actionsHtml = `
+      <div class="actions">
+        <button class="btn" onclick="openTagModal(${i.id})">🏷 标签</button>
+        ${copyBtn}
+        <button class="btn" onclick="moveTo(${i.id},'inbox')">→收件箱</button>
+      </div>`;
+  }
+
+  const checkBtn = i.deleted ? "" : `<button class="check-btn" onclick="toggleDone(${i.id})"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
+  const swipeDelBtn = i.deleted ? "" : `<div class="swipe-actions"><button class="swipe-del" onclick="del(${i.id})">删除</button></div>`;
+
+  return `
+    <div class="swipe-wrap" data-id="${i.id}">
+      ${swipeDelBtn}
+      <div class="swipe-content">
+        <div class="item ${i.done?'done':''} glass">
+          <div class="item-head">
+            ${checkBtn}
+            <div style="flex:1">
+              <div class="item-title">${i.title}</div>
+              ${authorLine}
+            </div>
+            ${i.deleted ? '<span class="badge badge-trash">已删除</span>' : (currentCat==='all' ? `<span class="badge ${CAT_BADGE[i.cat]}">${CAT_LABEL[i.cat]}</span>` : '')}
+          </div>
+          ${i.summary ? `<div class="item-summary">${i.summary}</div>` : ""}
+          ${extraLine}
+          ${promptBlock}
+          ${tagsLine}
+          <div class="item-meta">
+            ${dueLine}
+            <span>+${i.added}</span>
+          </div>
+          ${actionsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setOverlay(id, patch) {
+  OVERLAY[id] = Object.assign({}, OVERLAY[id], patch);
+  mergeItems(); save(); render();
+}
+function toggleDone(id) {
+  const b = BASE.find(x=>x.id===id) || {};
+  const cur = (OVERLAY[id] && OVERLAY[id].done !== undefined) ? OVERLAY[id].done : !!b.done;
+  setOverlay(id, { done: !cur });
+}
+function del(id) { setOverlay(id, { deleted: true }); }
+function hardDel(id) {
+  if(!confirm("彻底删除后无法恢复，确定？")) return;
+  setOverlay(id, { deleted: true, purged: true });
+}
+function restoreItem(id) { setOverlay(id, { deleted: false, purged: false }); }
+function moveTo(id, cat) { setOverlay(id, { cat }); }
+
+// ===== 左滑删除（touch 交互） =====
+const SWIPE_THRESHOLD = 40;
+const SWIPE_OPEN_OFFSET = -80;
+let activeSwipe = null;
+
+function closeAllSwipes(except) {
+  document.querySelectorAll(".swipe-wrap.open").forEach(el => {
+    if (el !== except) el.classList.remove("open");
+  });
+}
+
+document.addEventListener("touchstart", e => {
+  const wrap = e.target.closest(".swipe-wrap");
+  if (!wrap) {
+    if (activeSwipe && !e.target.closest(".swipe-actions")) {
+      closeAllSwipes(); activeSwipe = null;
+    }
+    return;
+  }
+  if (activeSwipe && activeSwipe !== wrap) {
+    closeAllSwipes(wrap); activeSwipe = wrap; return;
+  }
+  wrap._startX = e.touches[0].clientX;
+  wrap._startY = e.touches[0].clientY;
+  wrap._moved = false;
+}, { passive: true });
+
+document.addEventListener("touchmove", e => {
+  if (!e.target.closest) return;
+  const wrap = e.target.closest(".swipe-wrap");
+  if (!wrap || wrap._startX == null) return;
+  const dx = e.touches[0].clientX - wrap._startX;
+  const dy = e.touches[0].clientY - wrap._startY;
+  if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy)) return;
+  wrap._moved = true;
+  const content = wrap.querySelector(".swipe-content");
+  let offset = wrap.classList.contains("open") ? SWIPE_OPEN_OFFSET + dx : dx;
+  if (offset > 0) offset = 0;
+  if (offset < SWIPE_OPEN_OFFSET) offset = SWIPE_OPEN_OFFSET;
+  content.style.transform = `translateX(${offset}px)`;
+  content.style.transition = "none";
+}, { passive: true });
+
+document.addEventListener("touchend", e => {
+  const wrap = e.target.closest ? e.target.closest(".swipe-wrap") : null;
+  if (!wrap || wrap._startX == null) return;
+  const dx = (e.changedTouches[0].clientX || 0) - wrap._startX;
+  const content = wrap.querySelector(".swipe-content");
+  content.style.transition = ""; content.style.transform = "";
+  if (!wrap._moved) {
+    if (wrap.classList.contains("open")) { wrap.classList.remove("open"); activeSwipe = null; }
+    wrap._startX = null; return;
+  }
+  if (dx < -SWIPE_THRESHOLD) { wrap.classList.add("open"); activeSwipe = wrap; }
+  else if (dx > SWIPE_THRESHOLD) { wrap.classList.remove("open"); if (activeSwipe === wrap) activeSwipe = null; }
+  wrap._startX = null;
+}, { passive: true });
+
+// ===== 标签编辑弹窗 =====
+const CAT_TAG_GROUPS = {
+  read:   ["性别向","题材","氛围"],
+  watch:  ["地区","类型"],
+  prompt: ["用途"],
+  todo:   [], inbox: [], trash: []
+};
+
+function openTagModal(id) {
+  const i = ITEMS.find(x=>x.id===id); if (!i) return;
+  editingId = id; editingCat = i.cat; editingTags = [...(i.tags || [])];
+  document.getElementById("modal-title").textContent = "编辑标签 · " + i.title;
+  renderModalTags(editingCat);
+  document.getElementById("tag-modal").classList.add("show");
+}
+function closeTagModal() {
+  document.getElementById("tag-modal").classList.remove("show");
+  editingId = null; editingCat = null; editingTags = [];
+}
+function renderModalTags(cat) {
+  const container = document.getElementById("modal-tag-groups");
+  const allowedGroups = CAT_TAG_GROUPS[cat] || [];
+  const groups = TAG_GROUPS.filter(g => allowedGroups.includes(g.name));
+  let html = "";
+  if (groups.length === 0) {
+    html = `<div class="modal-sub" style="margin-bottom:10px">该分类没有预设标签，可直接在下方自定义添加</div>`;
+  } else {
+    groups.forEach(g => {
+      html += `<div class="tag-group"><div class="tag-group-title">${g.name}</div><div class="tag-options">`;
+      g.tags.forEach(t => {
+        const selCls = editingTags.includes(t) ? "selected" : "";
+        const colorCls = editingTags.includes(t) ? tagCls(t) : "";
+        html += `<span class="tag-opt ${selCls} ${colorCls}" onclick="toggleEditTag('${t.replace(/'/g,"\\'")}')">${t}</span>`;
+      });
+      html += `</div></div>`;
+    });
+  }
+  const builtin = new Set(groups.flatMap(g=>g.tags));
+  const customs = editingTags.filter(t => !builtin.has(t));
+  if (customs.length) {
+    html += `<div class="tag-group"><div class="tag-group-title">已添加（自定义）</div><div class="tag-options">`;
+    customs.forEach(t => {
+      html += `<span class="tag-opt selected tag-custom" onclick="toggleEditTag('${t.replace(/'/g,"\\'")}')">${t} ✕</span>`;
+    });
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+function toggleEditTag(t) {
+  const idx = editingTags.indexOf(t);
+  if (idx >= 0) editingTags.splice(idx, 1); else editingTags.push(t);
+  renderModalTags(editingCat);
+}
+function addCustomTag() {
+  const input = document.getElementById("custom-tag-input");
+  const v = input.value.trim(); if (!v) return;
+  if (!editingTags.includes(v)) editingTags.push(v);
+  input.value = ""; renderModalTags(editingCat);
+}
+function saveTags() {
+  setOverlay(editingId, { tags: [...editingTags] });
+  closeTagModal();
+}
+
+// ===== 提示词展开/复制 =====
+function togglePrompt(id) {
+  const el = document.getElementById("pb-"+id); if (!el) return;
+  el.classList.toggle("expanded");
+  const toggle = el.nextElementSibling;
+  if (toggle) toggle.textContent = el.classList.contains("expanded") ? "收起" : "展开全文";
+}
+function copyPrompt(id) {
+  const i = ITEMS.find(x=>x.id===id); if (!i || !i.prompt) return;
+  navigator.clipboard.writeText(i.prompt).then(() => alert("已复制到剪贴板")).catch(() => {
+    const ta = document.createElement("textarea"); ta.value = i.prompt;
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    alert("已复制到剪贴板");
+  });
+}
+
+// ===== 数据层：data.json 为唯一真源，localStorage 仅作离线缓存 + 本地交互覆盖 =====
+// BASE = 来自 data.json 的远端数据；OVERLAY = 本设备交互产生的局部修改（done/删除/标签/分类）
+// ITEMS = BASE 与 OVERLAY 合并后的渲染视图
+function mergeItems() {
+  ITEMS = BASE.map(b => Object.assign({}, b, OVERLAY[b.id] || {}));
+}
+function save() {
+  // 仅持久化本设备的局部覆盖，便于离线时仍然可用
+  try { localStorage.setItem("myListOverlay", JSON.stringify(OVERLAY)); } catch(e){}
+}
+async function load() {
+  try {
+    const res = await fetch("./data.json", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      BASE = Array.isArray(data) ? data.slice() : (data.items || []).slice();
+    }
+  } catch(e) { /* file:// 或离线：回退到默认 / 本地缓存 */ }
+  if (!BASE.length) {
+    try {
+      const old = localStorage.getItem("myListItems");
+      if (old) BASE = JSON.parse(old);
+    } catch(e){}
+  }
+  if (!BASE.length) BASE = DEFAULT_ITEMS.slice();
+  try {
+    const o = localStorage.getItem("myListOverlay");
+    if (o) OVERLAY = JSON.parse(o) || {};
+  } catch(e){}
+  mergeItems();
+}
+
+// ===== 弹窗事件 =====
+document.getElementById("custom-tag-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); addCustomTag(); }
+});
+document.getElementById("tag-modal").addEventListener("click", e => {
+  if (e.target.id === "tag-modal") closeTagModal();
+});
+
+load().then(() => render());
+</script>
+</body>
+</html>
